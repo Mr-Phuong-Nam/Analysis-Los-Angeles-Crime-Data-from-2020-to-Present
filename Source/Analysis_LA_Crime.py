@@ -137,17 +137,20 @@ is_duplicated
 #   - ```LON```: The longitude of the location
 
 # %% [markdown]
-#   ### The current data type of each column
+#   ### General information about each column
 
 # %%
-crime_df.dtypes 
-
+crime_df.info()
 
 # %% [markdown]
 #   Some columns have the wrong data type:
+#   - ```DR_Rptd```: object -> datetime
 #   - ```DATE OCC```: object -> datetime
 #   - ```TIME OCC```: int -> datetime
 #   - ```Mocodes```: object -> list of mocodes
+
+# %% [markdown]
+# Crm Cd 2, 3, 4 have a lot of missing values
 
 # %% [markdown]
 #  ## 2.3 Exploring numerical and categorical columns
@@ -202,7 +205,7 @@ crime_df[cat_cols].nunique()
 # %%
 for col in cat_cols:
     print('-', col, ': ', end = '')
-    print(crime_df[col].unique()[:5])
+    print(crime_df[col].dropna().unique()[:5])
 
 
 # %% [markdown]
@@ -214,10 +217,66 @@ for col in cat_cols:
 # # 3. Data cleaning
 
 # %% [markdown]
+# ### Drop Crime Cd 2, 3, 4 columns because they have a lot of missing values
+
+# %%
+crime_df = crime_df.drop(columns = ['Crm Cd 2', 'Crm Cd 3', 'Crm Cd 4'])
+
+# %% [markdown]
+# ### Convert Date Rptd, DATE OCC, TIME OCC to datetime
+
+# %% [markdown]
+# - There is a redundant part in `DR_Rptd` and `DATE OCC` columns. That is the time part, which is always 12:00:00 AM. So we can drop it.
+
+# %%
+print(crime_df['Date Rptd'].str.split(' ').apply(lambda x: x[1] + ' ' + x[2]).unique())
+print(crime_df['DATE OCC'].str.split(' ').apply(lambda x: x[1] + ' ' + x[2]).unique())
+
+# %%
+crime_df['Date Rptd'] = crime_df['Date Rptd'].str.split(' ').apply(lambda x: x[0])
+crime_df['DATE OCC'] = crime_df['DATE OCC'].str.split(' ').apply(lambda x: x[0])
+
+# %% [markdown]
+# - The `TIME OCC` column is in integer format. First, we convert it to string format by adding zeros to the left of the number. Then, we convert it to datetime format.
+
+# %%
+crime_df['TIME OCC'] = crime_df['TIME OCC'].astype(str).str.zfill(4)
+
+# %% [markdown]
+# - Then we combine `DATE OCC` and `TIME OCC` to create a new column `Datetime OCC`. Finally, we convert Date Rptd and Datetime Occ to datetime format and drop the old columns.
+
+# %%
+crime_df['Datetime OCC'] = crime_df['DATE OCC'] + ' ' + crime_df['TIME OCC']
+crime_df['Datetime OCC'] = pd.to_datetime(crime_df['Datetime OCC'], format = '%m/%d/%Y %H%M')
+crime_df['Date Rptd'] = pd.to_datetime(crime_df['Date Rptd'], format = '%m/%d/%Y')
+
+crime_df = crime_df.drop(columns = ['DATE OCC', 'TIME OCC'])
+crime_df
+
+# %% [markdown]
 # # 4. Data visualization
 
 # %% [markdown]
 # # 5. Questions and answers
+
+# %% [markdown]
+# ### 5.1 Where is the location and what is the time happening of each type of crime?
+
+# %% [markdown]
+# First we need to know how many types of crime are there in this dataset.
+# 
+
+# %%
+crime_df
+
+# %% [markdown]
+# There are 138 types of crime in this dataset. That's a lot. So we need to group them into some types of crime.
+# 
+# 
+# 
+
+# %%
+crime_df['Crm Cd Desc'].unique()
 
 # %% [markdown]
 # # 6. Model to predict the time and location of the next crime
