@@ -217,16 +217,25 @@ for col in cat_cols:
 # # 3. Data cleaning
 
 # %% [markdown]
-# ### Drop Crime Cd 2, 3, 4 columns because they have a lot of missing values
+# ### Drop columns
+
+# %% [markdown]
+# Columns `Crm Cd 2`, `Crm Cd 3`, `Crm Cd 4`, `Cross Street` are dropped because they have too many missing values.
 
 # %%
-crime_df = crime_df.drop(columns = ['Crm Cd 2', 'Crm Cd 3', 'Crm Cd 4'])
+crime_df = crime_df.drop(columns = ['Crm Cd 2', 'Crm Cd 3', 'Crm Cd 4', 'Cross Street'])
+
+# %% [markdown]
+# Drop `DR_NO`, `AREA`, `Premis Cd`, `Status`, `Weapon Used Cd` because they are not useful.
+
+# %%
+crime_df = crime_df.drop(['DR_NO', 'AREA', 'Premis Cd', 'Status', 'Weapon Used Cd'], axis=1)
 
 # %% [markdown]
 # ### Convert Date Rptd, DATE OCC, TIME OCC to datetime
 
 # %% [markdown]
-# - There is a redundant part in `DR_Rptd` and `DATE OCC` columns. That is the time part, which is always 12:00:00 AM. So we can drop it.
+# There is a redundant part in `DR_Rptd` and `DATE OCC` columns. That is the time part, which is always 12:00:00 AM. So we can drop it.
 
 # %%
 print(crime_df['Date Rptd'].str.split(' ').apply(lambda x: x[1] + ' ' + x[2]).unique())
@@ -237,13 +246,13 @@ crime_df['Date Rptd'] = crime_df['Date Rptd'].str.split(' ').apply(lambda x: x[0
 crime_df['DATE OCC'] = crime_df['DATE OCC'].str.split(' ').apply(lambda x: x[0])
 
 # %% [markdown]
-# - The `TIME OCC` column is in integer format. First, we convert it to string format by adding zeros to the left of the number. Then, we convert it to datetime format.
+# The `TIME OCC` column is in integer format. First, we convert it to string format by adding zeros to the left of the number. Then, we convert it to datetime format.
 
 # %%
 crime_df['TIME OCC'] = crime_df['TIME OCC'].astype(str).str.zfill(4)
 
 # %% [markdown]
-# - Then we combine `DATE OCC` and `TIME OCC` to create a new column `Datetime OCC`. Finally, we convert Date Rptd and Datetime Occ to datetime format and drop the old columns.
+# Then we combine `DATE OCC` and `TIME OCC` to create a new column `Datetime OCC`. Finally, we convert Date Rptd and Datetime Occ to datetime format and drop the old columns.
 
 # %%
 crime_df['Datetime OCC'] = crime_df['DATE OCC'] + ' ' + crime_df['TIME OCC']
@@ -251,7 +260,50 @@ crime_df['Datetime OCC'] = pd.to_datetime(crime_df['Datetime OCC'], format = '%m
 crime_df['Date Rptd'] = pd.to_datetime(crime_df['Date Rptd'], format = '%m/%d/%Y')
 
 crime_df = crime_df.drop(columns = ['DATE OCC', 'TIME OCC'])
-crime_df
+crime_df[['Date Rptd', 'Datetime OCC']].head()
+
+# %% [markdown]
+# ### Handle missing values
+
+# %% [markdown]
+# `Vict Age` has a lot of values that less than 1. By checking the 'Crm Cd Desc' column, we can see that these rows do not have any relation with babies. So we can consider them as missing values.
+
+# %%
+crime_df.loc[crime_df['Vict Age'] <= 0, 'Crm Cd Desc'].unique()[:10]
+
+# %%
+crime_df.loc[crime_df['Vict Age'] <= 0, 'Vict Age'] = np.nan
+
+# %% [markdown]
+# `Vict Sex` has some different values that are not F, M. We can consider them as missing values.
+
+# %%
+crime_df['Vict Sex'].unique()
+
+# %%
+crime_df.loc[(crime_df['Vict Sex'] != 'F') & (crime_df['Vict Sex'] != 'M'), 'Vict Sex'] = np.nan
+
+# %% [markdown]
+# Similarly for `Vict Descent` and 'Status Desc' columns.
+
+# %%
+crime_df['Vict Descent'].unique()
+
+# %%
+crime_df.loc[crime_df['Vict Descent'] == '-', 'Vict Descent'] = np.nan
+crime_df.loc[crime_df['Vict Descent'] == 'X', 'Vict Descent'] = np.nan
+
+# %%
+crime_df['Status Desc'].unique()
+
+# %%
+crime_df.loc[crime_df['Status Desc'] == 'UNK', 'Status Desc'] = np.nan
+
+# %% [markdown]
+# ### Save the cleaned data
+
+# %%
+crime_df.to_csv('../Data/crime_data_cleaned.csv', index = False)
 
 # %% [markdown]
 # # 4. Data visualization
@@ -267,7 +319,7 @@ crime_df
 # 
 
 # %%
-crime_df
+
 
 # %% [markdown]
 # There are 138 types of crime in this dataset. That's a lot. So we need to group them into some types of crime.
