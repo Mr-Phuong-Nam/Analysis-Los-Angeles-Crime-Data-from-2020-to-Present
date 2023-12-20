@@ -20,7 +20,8 @@
 # %%
 import pandas as pd
 import numpy as np
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # %%
 pd.set_option('display.max_columns', 500)
@@ -294,6 +295,9 @@ crime_df.loc[crime_df['Vict Descent'] == '-', 'Vict Descent'] = np.nan
 crime_df.loc[crime_df['Vict Descent'] == 'X', 'Vict Descent'] = np.nan
 
 # %%
+
+
+# %%
 crime_df['Status Desc'].unique()
 
 # %%
@@ -309,6 +313,161 @@ crime_df.to_csv('../Data/crime_data_cleaned.csv', index = False)
 # # 4. Data visualization
 
 # %% [markdown]
+# Visualize some columns to have a better understanding about the current situation of crime in Los Angeles.
+
+# %% [markdown]
+# ### Number of crimes by month
+
+# %%
+plt.style.use('fivethirtyeight')
+
+# %%
+crime_df = pd.read_csv('../Data/crime_data_cleaned.csv')
+
+# %%
+# plot the number of crimes per month
+plt.figure(figsize = (20, 5))
+crime_df['Date Rptd'].dt.to_period('M').value_counts().sort_index().plot(kind = 'line')
+plt.show()
+
+# %%
+# Top 5 areas with the most crimes
+
+crime_df['AREA NAME'].value_counts().sort_values(ascending = False).head(5).plot(kind = 'bar')
+plt.xticks(rotation = 0)
+plt.show()
+
+
+# %%
+# Popular crimes
+
+crime_df['Crm Cd Desc'].value_counts().sort_values(ascending = False).head(4).plot(kind = 'barh')
+plt.xticks(rotation = 0)
+plt.show()
+
+# %%
+# Arrange of victim age
+plt.figure(figsize = (10, 5))
+crime_df['Vict Age'].hist(bins = 70, edgecolor = 'white')
+plt.xticks(np.arange(0, 90, 5))
+plt.show()
+
+# %%
+# Compare sex of victims by descents
+plt.figure(figsize = (12, 24))
+
+crime_df[['Vict Sex', 'Vict Descent']].groupby('Vict Descent').value_counts().unstack().plot(kind = 'barh', stacked = True, ax=plt.subplot(3, 1, 1)) 
+# A - Other Asian
+# B - Black
+# C - Chinese
+# D - Cambodian
+# F - Filipino
+# G - Guamanian
+# H - Hispanic/Latin/Mexican
+# I - American Indian/Alaskan Native
+# J - Japanese
+# K - Korean
+# L - Laotian
+# O - Other
+# P - Pacific Islander
+# S - Samoan
+# U - Hawaiian
+# V - Vietnamese
+# W - White
+# Z - Asian Indian
+bar_positions = np.arange(18)
+plt.yticks(bar_positions, ['Other Asian',
+             'Black',
+             'Chinese',
+             'Cambodian',
+             'Filipino',
+             'Guamanian',
+             'Hispanic/Latin/Mexican',
+             'American Indian/Alaskan Native',
+             'Japanese',
+             'Korean',
+             'Laotian',
+             'Other',
+             'Pacific Islander',
+             'Samoan',
+             'Hawaiian',
+             'Vietnamese',
+             'White',
+             'Asian Indian'])
+plt.show()
+
+# %%
+# Popular Premis Desc
+
+crime_df['Premis Desc'].value_counts().sort_values(ascending = False).head(5).plot(kind = 'bar')
+plt.xticks(rotation = 90)
+plt.show()
+
+# %%
+# Popular Weapon Desc
+plt.figure(figsize = (20, 5))
+crime_df['Weapon Desc'].value_counts().sort_values(ascending = False).head(5).plot(kind = 'barh')
+plt.show()
+
+# %%
+# Current Status of the crime
+plt.figure(figsize = (10, 5))
+crime_df['Status Desc'].value_counts().sort_values(ascending = False).plot(kind = 'bar')
+plt.xticks(rotation = 0)
+plt.show()
+
+# %%
+import seaborn as sns
+
+# %%
+# Heatmap of crime by day of week and hour
+temp_df = pd.DataFrame()
+temp_df['day_of_week'] = crime_df['Datetime OCC'].dt.day_name()
+temp_df['hour'] = crime_df['Datetime OCC'].dt.hour
+
+plt.figure(figsize = (10, 5))
+sns.heatmap(temp_df.groupby(['day_of_week', 'hour']).size().unstack(), cmap = 'Reds')
+plt.show()
+
+# %%
+# Heatmap of crime by month and day of week
+temp_df = pd.DataFrame()
+temp_df['month'] = crime_df['Datetime OCC'].dt.month_name()
+temp_df['day_of_week'] = crime_df['Datetime OCC'].dt.day_name()
+
+plt.figure(figsize = (10, 5))
+sns.heatmap(temp_df.groupby(['month', 'day_of_week']).size().unstack(), cmap = 'Blues')
+plt.show()
+
+# %%
+# Plot 2 histograms of crime vict age of male and female on the same plot
+gender_df = pd.DataFrame(columns=["Male", "Female"])
+gender_df["Male"] = crime_df.loc[crime_df['Vict Sex'] == 'M', 'Vict Age'].reset_index(drop=True)
+gender_df['Female'] = crime_df.loc[crime_df['Vict Sex'] == 'F', 'Vict Age'].reset_index(drop=True)
+
+plt.figure(figsize = (10, 5))
+
+kwargs = dict(histtype='stepfilled',bins=70, edgecolor='black', alpha = 0.3)
+plt.hist(gender_df['Female'], range=(0, 120), label='Female', **kwargs)
+plt.hist(gender_df['Male'], range=(0, 120), label='Male', **kwargs)
+plt.legend() 
+
+# %%
+# Draw all the crimes on the map
+import folium
+from folium.plugins import HeatMap
+
+temp_df = crime_df.dropna(subset=['LAT', 'LON'])
+temp_df = temp_df.loc[(temp_df['LAT'] != 0) & (temp_df['LON'] != 0)]
+
+m = folium.Map(location=[34.0522, -118.2437], zoom_start=11)
+HeatMap(data=temp_df[['LAT', 'LON']], radius=15).add_to(m)
+m
+
+# %%
+crime_df
+
+# %% [markdown]
 # # 5. Questions and answers
 
 # %% [markdown]
@@ -319,16 +478,19 @@ crime_df.to_csv('../Data/crime_data_cleaned.csv', index = False)
 # 
 
 # %%
-
+crime_df['Crm Cd Desc'].unique().shape 
 
 # %% [markdown]
-# There are 138 types of crime in this dataset. That's a lot. So we need to group them into some types of crime.
+# There are 138 types of crime in this dataset. That's a lot. So we need to group them into some main types of crime.
 # 
 # 
 # 
 
 # %%
 crime_df['Crm Cd Desc'].unique()
+
+# %%
+
 
 # %% [markdown]
 # # 6. Model to predict the time and location of the next crime
