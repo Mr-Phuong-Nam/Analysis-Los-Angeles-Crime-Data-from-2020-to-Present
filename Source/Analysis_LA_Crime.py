@@ -180,7 +180,7 @@ crime_df[num_cols].isnull().mean() * 100
 
 
 # %% [markdown]
-#   There is no missing value in these columns.
+#   These columns have no missing values.
 
 # %%
 crime_df[num_cols].agg(['min', 'max'])
@@ -188,9 +188,7 @@ crime_df[num_cols].agg(['min', 'max'])
 
 
 # %% [markdown]
-#   The `LAT` and `LON` seem normal as well as they are coordinates.
-# 
-#   But the `Vict Age` is abnormal since there is existence of negative age (-3) and very old person (120).
+# Both the `LAT` and `LON` appear normal as expected for coordinates. However, the `Vict Age` value is unusual. It includes negative ages (-3) and exceptionally high values (120), suggesting inconsistencies or potential errors.
 
 # %% [markdown]
 #   ### Categorical columns
@@ -209,15 +207,13 @@ crime_df[cat_cols].nunique()
 
 
 # %% [markdown]
-#   `Mocodes` may contains the combinations of Mocode, then its unique values is high.
-# 
-#   The overall unique value of these columns is normal.
+# The `Mocodes` column may contain combinations of Mocodes, leading to a high number of unique values. However, the overall number of unique values in the other columns is within a normal range.
 
 # %%
 crime_df['Mocodes'].str.split().explode().nunique()
 
 # %% [markdown]
-#   `Mocodes`'s unique values after splitting is showed above.
+#   `Mocodes`' unique values after splitting are shown above.
 
 # %%
 for col in cat_cols:
@@ -227,9 +223,7 @@ for col in cat_cols:
 
 
 # %% [markdown]
-#   Some unique values of these categorical columns are showed above.
-# 
-#   They are normal except the `Mocodes` is required to be split into list of Mocode.
+# Some unique values of these categorical columns are shown above. All appear normal except for the `Mocodes` column, which requires splitting into a list of individual Mocodes during the data pre-processing phase.
 
 # %% [markdown]
 #  # 3. Data cleaning
