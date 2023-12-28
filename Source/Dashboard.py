@@ -13,9 +13,13 @@ from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
+import os 
+import sys
+
+
 
 # Read the cleaned data from the csv file
-crime_df = pd.read_csv('Data/crime_data_cleaned.csv')
+crime_df = pd.read_csv('../Data/crime_data_cleaned.csv')
 
 # Convert the datetime_occ column to datetime
 crime_df['datetime_occ'] = pd.to_datetime(crime_df['datetime_occ'])
@@ -62,7 +66,8 @@ app.layout = html.Div([
                'margin-bottom': '10px', 
                'float': 'left', 
                'width': '11%', 
-               'height': '130px'}
+               'height': '130px',
+               'background-color': '#f2f2f2'}
     ),
 
     # Graph for displaying the number of crimes in each year as a pie chart
@@ -107,7 +112,7 @@ app.layout = html.Div([
 
     # Graph for displaying the distribution of victim descents
     dcc.Graph(id='victim-descent-bar-plot', figure={}, style={'width': "50%", 'float': 'left', 'height': '500px'}),
-], style={'font-family': 'Arial'})
+], style={'font-family': 'Arial', 'background-color': '#f2f2f2'})
 
 # ---------------------------------------------------------------------------------------------------
 # Callbacks for updating the graphs based on user input
@@ -122,7 +127,7 @@ def update_num_crimes(years_selected):
     num_crimes = len(filtered_df)
     return [
         html.P('Total number of crimes', style={'font-size': '14px', 'text-align': 'left'}),
-        html.H3(num_crimes, style={'font-size': '60px', 'font-weight': "bold",
+        html.H3(num_crimes, style={'font-size': '40px', 'font-weight': "bold",
                                     'text-align': 'left', 'margin': '0px', 'color': 'grey'})
     ]
 
@@ -361,7 +366,7 @@ def update_crime_location_dot_map(clickData):
                 lat=34.0589,  # Los Angeles latitude
                 lon=-118.4648  # Los Angeles longitude
             ),
-            zoom=9.7  # Set the initial zoom level
+            zoom=9  # Set the initial zoom level
         ),
     )
 
