@@ -21,15 +21,13 @@
 import pandas as pd
 import numpy as np
 import json
+import matplotlib.pyplot as plt
 
 import os 
 import sys
 
-
 # %%
 pd.set_option('display.max_columns', 500)
-
-
 
 # %% [markdown]
 #  ---
@@ -55,10 +53,17 @@ pd.set_option('display.max_columns', 500)
 #  ## 2.1. Load the data
 
 # %%
-crime_df = pd.read_csv('../Data/crime_data_2020_present.csv')
+crime_df = pd.read_csv('../Data/Crime_Data_from_2020_to_Present.csv')
 crime_df.head()
 
+# %% [markdown]
+# Normallizing the column names
 
+# %%
+#Lowercase all columns and replace spaces and "-" with underscores
+crime_df.columns = crime_df.columns.str.lower()
+crime_df.columns = crime_df.columns.str.replace(' ', '_')
+crime_df.columns= crime_df.columns.str.replace('-', '_')
 
 # %% [markdown]
 #  ## 2.2 General
@@ -68,8 +73,6 @@ crime_df.head()
 
 # %%
 crime_df.shape
-
-
 
 # %% [markdown]
 #  ### What is the meaning of each row?
@@ -81,7 +84,6 @@ crime_df.shape
 # %%
 is_duplicated = np.any(crime_df.duplicated())
 is_duplicated
-
 
 # %% [markdown]
 #  ### The meaning of each column
@@ -151,7 +153,6 @@ is_duplicated
 # %%
 crime_df.info()
 
-
 # %% [markdown]
 #  Some columns have the wrong data type:
 #  - ```date_rptd```: object -> datetime
@@ -163,44 +164,36 @@ crime_df.info()
 #  crm_cd 2, 3, 4 have a lot of missing values
 
 # %% [markdown]
-#     ## 2.3 Exploring numerical and categorical columns
+# ## 2.3 Exploring numerical and categorical columns
 
 # %% [markdown]
-#     Select the numerical and categorical columns.
+# Select the numerical and categorical columns.
 
 # %%
 num_cols = ['vict_age', 'lat', 'lon']
 
 cat_cols = ['area', 'area_name', 'part_1_2', 'crm_cd', 'crm_cd_desc', 'mocodes', 'vict_sex', 'vict_descent', 'premis_cd', 'premis_desc', 'weapon_used_cd', 'weapon_desc', 'status', 'status_desc', 'crm_cd_1', 'crm_cd_2', 'crm_cd_3', 'crm_cd_4', 'cross_street']
 
-
-
 # %% [markdown]
-#     ### Numerical columns
+# ### Numerical columns
 
 # %%
 crime_df[num_cols].isnull().mean() * 100
 
-
-
 # %% [markdown]
-#     These columns have no missing values.
+# These columns have no missing values.
 
 # %%
 crime_df[num_cols].agg(['min', 'max'])
-
-
 
 # %% [markdown]
 #   Both the `lat` and `lon` appear normal as expected for coordinates. However, the `vict_age` value is unusual. It includes negative ages (-3) and exceptionally high values (120), suggesting inconsistencies or potential errors.
 
 # %% [markdown]
-#     ### Categorical columns
+# ### Categorical columns
 
 # %%
 crime_df[cat_cols].isnull().mean() * 100
-
-
 
 # %% [markdown]
 #  The overall missing value ratios are low except `weapon_used_cd`, `weapon_desc`, `crm_cd_2`, `crm_cd_3`, `crm_cd_4` and `cross_street`.
@@ -208,25 +201,19 @@ crime_df[cat_cols].isnull().mean() * 100
 # %%
 crime_df[cat_cols].nunique()
 
-
-
 # %% [markdown]
 #   The `mocodes` column may contain combinations of Mocodes, leading to a high number of unique values. However, the overall number of unique values in the other columns is within a normal range.
 
 # %%
 crime_df['mocodes'].str.split().explode().nunique()
 
-
-
 # %% [markdown]
-#  `mocodes`' unique values after splitting are shown above.
+# `mocodes`' unique values after splitting are shown above.
 
 # %%
 for col in cat_cols:
     print('-', col, ': ', end = '')
     print(crime_df[col].dropna().unique()[:5])
-
-
 
 # %% [markdown]
 #   Some unique values of these categorical columns are shown above. All appear normal except for the `mocodes` column, which requires splitting into a list of individual Mocodes during the data pre-processing phase.
@@ -243,13 +230,11 @@ for col in cat_cols:
 # %%
 crime_df = crime_df.drop(columns=['crm_cd_2', 'crm_cd_3', 'crm_cd_4', 'cross_street'])
 
-
 # %% [markdown]
 #  Drop `dr_no`, `area`, `premis_cd`, `status`, `weapon_used_cd` because they are not useful.
 
 # %%
 crime_df = crime_df.drop(['dr_no', 'area', 'premis_cd', 'status', 'weapon_used_cd'], axis=1)
-
 
 # %% [markdown]
 #  ### Convert `date_rptd,` `date_occ`, `time_occ` to datetime
@@ -286,9 +271,8 @@ crime_df['date_rptd'] = convert_to_datetime(crime_df['date_rptd'])
 # %%
 crime_df['time_occ'] = crime_df['time_occ'].astype(str).str.zfill(4)
 
-
 # %% [markdown]
-#  Then we combine `date_occ` and `time_occ` to create a new column `datetime_occ`. Finally, we convert Date Rptd and Datetime Occ to datetime format and drop the old columns.
+#  Then we combine `date_occ` and `time_occ` to create a new column `datetime_occ`. 
 
 # %%
 crime_df['datetime_occ'] = pd.to_datetime(crime_df['date_occ'].astype(str) + ' ' + crime_df['time_occ'].astype(str), format='%Y-%m-%d %H%M', errors='coerce')
@@ -312,25 +296,17 @@ crime_df = crime_df.drop(['date_occ', 'time_occ'], axis=1)
 # %%
 crime_df.loc[crime_df['vict_age'] <= 0, 'crm_cd_desc'].unique()[:10]
 
-
-
 # %%
 crime_df.loc[crime_df['vict_age'] <= 0, 'vict_age'] = np.nan
 
-
-
 # %% [markdown]
-#  `vict_sex` has some different values that are not F, M. We can consider them as missing values.
+# `vict_sex` has some different values that are not F, M. We can consider them as missing values. Then we can fill them with X (Unknown).
 
 # %%
 crime_df['vict_sex'].unique()
 
-
-
 # %%
-crime_df.loc[(crime_df['vict_sex'] != 'F') & (crime_df['vict_sex'] != 'M'), 'vict_sex'] = np.nan
-
-
+crime_df.loc[(crime_df['vict_sex'] != 'F') & (crime_df['vict_sex'] != 'M'), 'vict_sex'] = 'X'
 
 # %% [markdown]
 #  Similarly for `vict_descent` and `status_desc` columns.
@@ -338,23 +314,12 @@ crime_df.loc[(crime_df['vict_sex'] != 'F') & (crime_df['vict_sex'] != 'M'), 'vic
 # %%
 crime_df['vict_descent'].unique()
 
-
-
 # %%
-crime_df.loc[crime_df['vict_descent'] == '-', 'vict_descent'] = np.nan
-crime_df.loc[crime_df['vict_descent'] == 'X', 'vict_descent'] = np.nan
-
-
+crime_df.loc[crime_df['vict_descent'] == '-', 'vict_descent'] = 'X'
+crime_df.loc[crime_df['vict_descent'].isna(), 'vict_descent'] = 'X'
 
 # %%
 crime_df['status_desc'].unique()
-
-
-
-# %%
-crime_df.loc[crime_df['status_desc'] == 'UNK', 'status_desc'] = np.nan
-
-
 
 # %% [markdown]
 #  ### Convert numerical mocodes to categorical mocodes
@@ -405,7 +370,43 @@ crime_df[['mocodes', 'mocodes_desc']].head()
 
 
 # %% [markdown]
-#    ### Save the cleaned data
+# ### Add crime type column
+
+# %% [markdown]
+# As we observed, there are 138 different crime codes. They are too many to analyze. So we will group them into 10 types of crime: 
+# 1. Assault and Battery
+# 2. Theft and Robbery
+# 3. Property Damage and Vandalism
+# 4. Sexual Offenses
+# 5. Threats and Harassment
+# 6. Fraud and Forgery
+# 7. Traffic Offenses
+# 8. Juvenile Offenses
+# 9. Weapons Offenses
+# 10. Other Miscellaneous Crimes
+
+# %%
+crime_types = json.load(open('../Data/crime_types.json', 'r'))
+crime_types['Assault and Battery']
+
+# %%
+# Reverse the dictionary
+crime_types_dict = {}
+for key, value in crime_types.items():
+    for v in value:
+        crime_types_dict[v] = key
+
+crime_df['crm_type'] = crime_df['crm_cd_desc'].map(crime_types_dict)
+crime_df['crm_type'].unique()
+
+# %% [markdown]
+# ### Save the cleaned data
+
+# %%
+crime_df.shape
+
+# %%
+crime_df.head()
 
 # %%
 crime_df.to_csv('../Data/crime_data_cleaned.csv', index = False)
@@ -415,9 +416,9 @@ crime_df.to_csv('../Data/crime_data_cleaned.csv', index = False)
 #    # 4. Data visualization
 
 # %%
-from Dashboard import app
+# from Dashboard import app
 
-app.run_server(debug=True)
+# app.run_server(debug=True)
 
 # %% [markdown]
 #    # 5. Questions and answers
