@@ -45,6 +45,6 @@ while True:
 df = pd.DataFrame(all_data)
 
 # Save the DataFrame to a CSV file
-df.to_csv("crime_data_2020_present.csv", index=False)
+df.to_csv("Data/crime_data_2020_present.csv", index=False)
 
 print("Download complete.")
