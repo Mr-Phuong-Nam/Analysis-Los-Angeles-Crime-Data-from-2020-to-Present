@@ -1,5 +1,3 @@
-
-
 """
 This script creates a dashboard using the Dash framework to visualize and analyze Los Angeles crime data from 2020 to the present. 
 The dashboard includes multiple sections such as the number of crimes by years, crime details, and victim details. 
@@ -76,13 +74,13 @@ app.layout = html.Div([
     dcc.Graph(id='area-bar-plot', figure={}, style={'width': "60%", 'float': 'left', 'height': '600px'}),
 
     # Graph for displaying the number of crimes in each year as a line plot
-    dcc.Graph(id='num-crimes-line-plot', figure={}, style={'width': "60%", 'float': 'left', 'height': '900px'}),
+    dcc.Graph(id='num-crimes-line-plot', figure={}, style={'width': "65%", 'float': 'left', 'height': '700px'}),
 
     # Graph for displaying the distribution of status descriptions
-    dcc.Graph(id='status-desc-pie-chart', figure={}, style={'width': "35%", 'margin': '10px', 'float': 'left', 'height': '500px'}),
+    dcc.Graph(id='status-desc-pie-chart', figure={}, style={'width': "30%", 'margin': '10px', 'float': 'left', 'height': '400px'}),
 
     # Graph for displaying the distribution of crime parts
-    dcc.Graph(id='crime-part-pie-chart', figure={}, style={'width': "35%", 'margin': '10px', 'float': 'left', 'height': '400px'}),
+    dcc.Graph(id='crime-part-pie-chart', figure={}, style={'width': "30%", 'margin': '10px', 'float': 'left', 'height': '300px'}),
 
     # ---------------------------------------------------------------------------------------------------
     # Section 2: Crime Details
@@ -90,7 +88,7 @@ app.layout = html.Div([
     html.H2('CRIME DETAILS', style={'text-align': 'center', 'font-family': 'Arial', 'width': '100%', 'size': '60px', 'color': 'grey', 'float': 'left'}),
 
     # Graph for displaying the top 20 crime types with the highest number of crimes as a horizontal bar plot
-    dcc.Graph(id='crime-types-bar-plot', figure={}, style={'width': "50%", 'float': 'left', 'height': '600px'}, clickData={'points': [{'label': 'VEHICLE - STOLEN', 'pointNumber': 19}]}),
+    dcc.Graph(id='crime-types-bar-plot', figure={}, style={'width': "50%", 'float': 'left', 'height': '600px'}, clickData={'points': [{'label': 'Theft and Robbery', 'pointNumber': 9}]}),
 
     # Graph for displaying the crime locations as a dot map
     dcc.Graph(id='crime-location-dot-map', figure={}, style={'width': "50%", 'float': 'right', 'height': '1200px'}),
@@ -157,7 +155,14 @@ def update_area_bar_plot(years_selected):
     filtered_df = crime_df[crime_df['datetime_occ'].dt.year.isin(years_selected)]
     filtered_df['year'] = filtered_df['datetime_occ'].dt.year
     # Group the data by year and area name and get the number of crimes for each area
-    filtered_df = filtered_df.groupby(['year', 'area_name']).size().reset_index(name='count').sort_values(by='count', ascending=False)
+    filtered_df = filtered_df.groupby(['area_name', 'year']).size().reset_index(name='count')
+
+    # Sort by total number of crimes in each area
+    total_crimes = filtered_df.groupby('area_name')['count'].sum()
+
+    # Sort the DataFrame by the total number of crimes
+    filtered_df['total'] = filtered_df['area_name'].map(total_crimes)
+    filtered_df = filtered_df.sort_values('total', ascending=False)
 
     fig = go.Figure()
     # Add the bar plot for each year
@@ -166,15 +171,16 @@ def update_area_bar_plot(years_selected):
         fig.add_trace(go.Bar(
             x=year_df['area_name'], y=year_df['count'], name=year, legendgroup='group'))
 
+
     fig.update_layout(
         barmode='stack',
         title='Number of Crimes in each Area',
-        yaxis=dict(
-            range=[0, 60000],
-            tickmode='array',
-            tickvals=['0', '10000', '20000',
-                      '30000', '40000', '50000', '60000']
-        ),
+        # yaxis=dict(
+        #     range=[0, 60000],
+        #     tickmode='array',
+        #     tickvals=['0', '10000', '20000',
+        #               '30000', '40000', '50000', '60000']
+        # ),
         legend=dict(
             tracegroupgap=10
         ),
@@ -215,7 +221,7 @@ def update_num_crimes_line_plot(years_selected):
             ticktext=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],    
             # Ensure that all the months are displayed on the x-axis
-            range=[1, 12]        
+            range=[0, 13]        
         ),
         yaxis=dict(
             range=[0, 25000],
@@ -273,15 +279,12 @@ def update_crime_part_pie_chart(years_selected):
 @app.callback(
     Output('crime-types-bar-plot', 'figure'),
     Input('crime-types-bar-plot', 'clickData'),
-    Input('year-dropdown', 'value')
 )
-def update_crime_types_bar_plot(clickData, years_selected):
+def update_crime_types_bar_plot(clickData):
     selected_point = clickData['points'][0]['pointNumber']
 
-    # Filter the data based on the selected years
-    filtered_df = crime_df[crime_df['datetime_occ'].dt.year.isin(years_selected)]
     # Count the number of crimes for each crime type
-    filtered_df = filtered_df['crm_type'].value_counts().sort_values(ascending=True).tail(20)
+    filtered_df = crime_df['crm_type'].value_counts().sort_values(ascending=True).tail(20)
     # Create the bar plot
     crime_fig = px.bar(filtered_df, 
                        y=filtered_df.index, 
@@ -296,7 +299,7 @@ def update_crime_types_bar_plot(clickData, years_selected):
     crime_fig.update_layout(
         xaxis_title='Number of Crimes', 
         yaxis_title=None, 
-        title='Top 20 Crime Types (Click on a column to see details about that crime type)', 
+        title='Number of Crimes for each Crime Type \n(Click on a column to see details about that crime type)',
         title_x=0.5, title_font_size=20, title_font_family='Arial'
     )
 
@@ -306,14 +309,12 @@ def update_crime_types_bar_plot(clickData, years_selected):
 @app.callback(
     Output('weapon-bar-plot', 'figure'),
     Input('crime-types-bar-plot', 'clickData'),
-    Input('year-dropdown', 'value')
 )
-def update_weapon_bar_plot(clickData, years_selected):
+def update_weapon_bar_plot(clickData):
     crime_type = clickData['points'][0]['label']
 
     # Filter your data based on the selected crime_type and years
     filtered_df = crime_df[crime_df['crm_type'] == crime_type]
-    filtered_df = filtered_df[filtered_df['datetime_occ'].dt.year.isin(years_selected)]
     # Group the data by weapon description and get the number of crimes for each weapon
     filtered_df = filtered_df.groupby('weapon_desc').size().reset_index(name='count').sort_values(by='count', ascending=True).tail(5)
 
@@ -330,15 +331,13 @@ def update_weapon_bar_plot(clickData, years_selected):
 # Update the bar plot for the top 5 premise descriptions based on the selected crime type in the crime-types-bar-plot
 @app.callback(
     Output('premis-bar-plot', 'figure'),
-    Input('crime-types-bar-plot', 'clickData'),
-    Input('year-dropdown', 'value')
+    Input('crime-types-bar-plot', 'clickData')
 )
-def update_premis_bar_plot(clickData, years_selected):
+def update_premis_bar_plot(clickData):
     crime_type = clickData['points'][0]['label']
 
     # Filter your data based on the selected crime_type and years
     filtered_df = crime_df[crime_df['crm_type'] == crime_type]
-    filtered_df = filtered_df[filtered_df['datetime_occ'].dt.year.isin(years_selected)]
     # Group the data by premise description and get the number of crimes for each premise
     filtered_df = filtered_df.groupby('premis_desc').size().reset_index(name='count').sort_values(by='count', ascending=True).tail(5)
 
@@ -357,13 +356,11 @@ def update_premis_bar_plot(clickData, years_selected):
 @app.callback(
     Output('crime-location-dot-map', 'figure'),
     Input('crime-types-bar-plot', 'clickData'),
-    Input('year-dropdown', 'value')
 )
-def update_crime_location_dot_map(clickData, years_selected):
+def update_crime_location_dot_map(clickData):
     crime_type = clickData['points'][0]['label']
     # Filter your data based on the selected crime_type
     filtered_df = crime_df[crime_df['crm_type'] == crime_type]
-    filtered_df = filtered_df[filtered_df['datetime_occ'].dt.year.isin(years_selected)]
 
     # Mapbox token gets from https://account.mapbox.com/access-tokens/
     mapbox_token = 'pk.eyJ1IjoicGh1b25nbmFtMjU0IiwiYSI6ImNscW5hdHg4ZDNhY2Yya25wOTB4NW11cGMifQ.rqIAm8QhVlEmcgtwCwKG5A'
@@ -408,8 +405,8 @@ def update_crime_location_dot_map(clickData, years_selected):
     Input('year-dropdown', 'value') # Input is not used
 )
 def update_victim_descent_bar_plot(years_selected):
-    filtered_df = crime_df[crime_df['datetime_occ'].dt.year.isin(years_selected)]
-    victim_by_descent = filtered_df[['vict_descent', 'vict_sex']].groupby('vict_descent').value_counts().unstack().fillna(0)
+
+    victim_by_descent = crime_df[['vict_descent', 'vict_sex']].groupby('vict_descent').value_counts().unstack().fillna(0)
     victim_by_descent['total'] = victim_by_descent.sum(axis=1)
     victim_by_descent = victim_by_descent.sort_values(by='total')
     victim_by_descent = victim_by_descent.drop(columns=['total'])
@@ -426,7 +423,9 @@ def update_victim_descent_bar_plot(years_selected):
     vict_descents_plot.update_layout(xaxis_title='Count',
                                 yaxis_title=None,
                                 title='Victim Descent Distribution',
-                                title_x=0.5, title_font_size=20, title_font_family='Arial')
+                                title_x=0.5, title_font_size=20, title_font_family='Arial',
+    )
+
 
     return vict_descents_plot
 
@@ -437,9 +436,9 @@ def update_victim_descent_bar_plot(years_selected):
     Input('year-dropdown', 'value') 
 )
 def update_victim_age_hist(selected_year):
-    filtered_df = crime_df[crime_df['datetime_occ'].dt.year.isin(selected_year)]
+
     # Create the histogram
-    fig = px.histogram(filtered_df, 
+    fig = px.histogram(crime_df, 
                        x='vict_age', 
                        nbins=30, 
                        labels={'x': 'Victim Age'}, 

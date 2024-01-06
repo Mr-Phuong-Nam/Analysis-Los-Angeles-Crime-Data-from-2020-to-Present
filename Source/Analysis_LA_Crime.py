@@ -413,28 +413,69 @@ crime_df.to_csv('../Data/crime_data_cleaned.csv', index = False)
 
 
 # %% [markdown]
-#    # 4. Data visualization
+# # 4. Data visualization
 
 # %%
-# from Dashboard import app
+from Dashboard import app
+app.run_server(debug=True)
 
-# app.run_server(debug=True)
+# %% [markdown]
+# From the dashboard, we can have some insights about the crime in Los Angeles from 2020 to present.
+
+# %% [markdown]
+# ## Take a look at the overall crime situation
+
+# %% [markdown]
+# <img src="../Data/Image/total_crime.png" style="height: 600px; width:1000px;"/>
+
+# %% [markdown]
+# Total number of crimes in Los Angeles from 2020 to october 2023 is 829778 with 2022 has the highest number of crimes.   
+# 
+# Central, 77th Street, and Pacific are the top 3 areas with the highest number of crimes.
+
+# %% [markdown]
+# <img src="../Data/Image/crime_number.png" style="height: 500px; width:1000px;"/>
+
+# %% [markdown]
+# There is no clear trend in the number of crimes over months. The crimes may be affected by many factors such as political, economic, social, etc. These factors are changing over time, so the number of crimes is not stable.
+# 
+# Most of the crimes are under investigation which means that most of the crimes are not solved.
+# 
+# Serious crimes are more than less serious crimes.
+
+# %% [markdown]
+# <img src="../Data/Image/crime_types.png" style="height: 400px; width:600px;"/>
+
+# %% [markdown]
+# In 10 types of crime, theft and robbery are the most common crimes, followed by assault and battery.
+
+# %% [markdown]
+# <img src="../Data/Image/theft_and_robbery.png" style="height: 500px; width:1000px;"/>
+
+# %% [markdown]
+# Theft and robbery crimes occur frequently in various areas. Perpetrators often employ strong arms and guns to threaten their victims, and these incidents typically take place in streets, parking lots, and even victims' homes.
+
+# %% [markdown]
+# <img src="../Data/Image/Assault_and_Battery.png" style="height: 500px; width:1000px;"/>
+
+# %% [markdown]
+# Assault and battery crimes occur frequently in various areas. Perpetrators often employ strong arms to attack their victims, and these incidents typically take place in single-family dwellings, multi-family dwellings, and streets. 
+
+# %% [markdown]
+# <img src="../Data/Image/victim.png" style="height: 400px; width:1200px;"/>
+
+# %% [markdown]
+# Most of the victim ages are in the range of 20-40. This is the age range when people are most active in society, so they are more likely to be victims of crime.
+# 
+# The porpotion between male and felame victims is almost equal.
+# 
+# Hispanic/Latin/Mexican is the most common descent of victims.
 
 # %% [markdown]
 #    # 5. Questions and answers
 
 # %% [markdown]
 #    ### 5.1 Where is the location and what is the time happening of each type of crime?
-
-# %% [markdown]
-#    First we need to know how many types of crime are there in this dataset.
-# 
-
-# %% [markdown]
-#    There are 138 types of crime in this dataset. That's a lot. So we need to group them into some types of crime.
-# 
-# 
-# 
 
 # %% [markdown]
 #    # 6. Model to predict the time and location of the next crime
