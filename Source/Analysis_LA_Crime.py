@@ -472,18 +472,282 @@ app.run_server(debug=True)
 # Hispanic/Latin/Mexican is the most common descent of victims.
 
 # %% [markdown]
-#    # 5. Questions and answers
+# # 5. Questions and answers
 
 # %% [markdown]
-#    ### 5.1 Where is the location and what is the time happening of each type of crime?
+# ## 5.1 The time when criminals are most likely to be active ?
 
 # %% [markdown]
-#    # 6. Model to predict the time and location of the next crime
+# ### 5.1.1 Meanings:
 
 # %% [markdown]
-#    # 7. Conclusion
+# - Help citizens in Los Angeles can know day in weeks and timestamp in day most likely to be active to limit going out.
+# - This can help local law enforcement and security managers know when criminals are most active and take measures to tighten security at that time.
 
 # %% [markdown]
-#    # 8. References
+# ### 5.1.2 How to answer questions:
 
+# %% [markdown]
+# - The team will create a 2-dimensional matrix to represent the number of crimes per hour of the day and each day of the week. 
+# - Each column represents the number of cases for each hour of the year (select every 2 hours). And the rows represent the days of the week. Then use heatmap to visualize the results
+
+# %%
+def time_occurrence(df):
+
+    """
+    Function to create a matrix of the number of occurrences for each time interval and weekday
+    Args:
+        df: dataframe with the crime data
+    Returns:
+        time_matrix: matrix of the number of occurrences for each time interval and weekday
+    """
+    # Define time intervals and weekdays ,with time intervals of 2 hours
+    bins = np.arange(0, 26, 2)
+    weekdays = np.arange(7)
+    
+    # Create a matrix to store the number of occurrences for each time interval and weekday
+    time_matrix = np.zeros((len(bins) - 1, len(weekdays)), dtype=int)
+
+    # Iterate over time intervals
+    for i in range(len(bins) - 1):
+        # Create a boolean mask for the current time interval
+        mask_hour = (df['datetime_occ'].dt.hour >= bins[i]) & (df['datetime_occ'].dt.hour < bins[i + 1])
+        
+        # Iterate over weekdays
+        for j in range(len(weekdays)):
+            # Create a boolean mask for the current weekday
+            mask_weekday = df['datetime_occ'].dt.dayofweek == weekdays[j]
+
+            # Count occurrences for the current time interval and weekday
+            time_matrix[i, j] = np.sum(mask_hour & mask_weekday)
+
+    return time_matrix
+
+
+# %%
+#Call the function to create the matrix
+time_matrix=time_occurrence(crime_df)
+
+#Initialize the columns and index of the matrix
+columns=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+indexs=['12am-2am','2am-4am','4am-6am','6am-8am','8am-10am','10am-12pm','12pm-2pm','2pm-4pm','4pm-6pm','6pm-8pm','8pm-10pm','10pm-12am']
+
+#Create a dataframe with the matrix
+time_df=pd.DataFrame(time_matrix,columns=columns,index=indexs)
+
+# %%
+#Plot the heatmap to visualize the time of occurrence
+
+#Set the size of the figure
+plt.figure(figsize=(8,6))
+
+#Plot the heatmap
+sns.heatmap(time_df,cmap='YlGnBu')
+
+#Set the title, x and y labels
+plt.title('Time of Occurrence')
+plt.xticks(rotation=45)
+plt.xlabel('Day of Week')
+plt.ylabel('Time')
+plt.show()
+
+# %% [markdown]
+# ### 5.1.3 Answer
+
+# %% [markdown]
+# - Comment:
+#     - According to the time of day, time from 2am to 4am has the smallest number of crimes .Meanwhile, time 12am to 2pm and 4pm to 8pm are the time when the number of criminals is most active.
+#     - Regarding weekdays, we see that Friday has a lot of criminal activity.
+# 
+# - Conclusion: 
+#     - Regarding early morning time, it can be explained simply by saying that at that time, the number of people going out is very small, so criminals do not have many opportunities to perform actions.
+#     - You can see, in the period from 4 to 8 pm, the number of crimes is extremely high, the explanation is because this is the time of the weekend just starting, so there are a lot of outside activities, crime. Access to more people. At the same time, everyone leaves the house more, creating more conditions for criminals to rob.
+# 
+
+# %% [markdown]
+# ## 5.2 Do criminal groups operate depending on the season (cold or hot weather) ?
+
+# %% [markdown]
+# ### 5.2.1 Meanings
+
+# %% [markdown]
+# - Help people improvise to reduce the possibility of facing dangerous situations according to the seasons of the year.
+# - If the results of this question differ between groups, this is an interesting result for everyone to understand better about *criminal psychology*.
+# 
+
+# %% [markdown]
+# ### 5.2.2 How to answer questions
+
+# %% [markdown]
+# - Firstly, let's find out what types of crimes happen the most.
+
+# %%
+#Count the number of each type of crime
+crime_counts = crime_df['crm_type'].value_counts()
+
+#Sort the number of each type of crime
+crime_counts = crime_counts.sort_values(ascending=False)
+
+#Set style
+sns.set(style="whitegrid")
+
+#Set size of figure and plot bar chart
+plt.figure(figsize=(10, 6))
+bars = plt.barh(crime_counts.index, crime_counts, color='salmon')
+
+#Set value of each ba
+
+#Set title and label
+plt.title('Distribution of Crime Types')
+plt.xlabel('Number of Crimes')
+
+#Save figure
+plt.show()
+
+# %% [markdown]
+# - Through this we can see that 3 types *Theft and Robbery*, *Assauld and Battery* and *Property Damage and Vandalism* are at the top in terms of the number of crimes that occur.
+# - And these 3 crime groups can be groups that directly affect residents.
+# - Therefore, the main analysis is Weaknesses for these three groups seem more useful to people in general and the city of Los Angeles in particular.
+
+# %%
+#Create a new dataframe to store important types of crime needed to this question
+effect_president_col=['Theft and Robbery','Assault and Battery','Property Damage and Vandalism']
+effect_president_crime_df=crime_df[crime_df['crm_type'].isin(effect_president_col)]
+
+# %% [markdown]
+# - Secondly, we need to see what our data looks like for each year, is there any missing or oulier in a certain month?
+
+# %%
+#Load image of the viaualization of the crime each month ,which is saved from the dashboard
+import imageio
+
+def plot_image_from_png(file_path):
+    # Read image from file_path
+    image = imageio.imread(file_path)
+
+    # Plot the image
+    plt.imshow(image)
+    plt.axis('off')  # clear x- and y-axes
+    plt.show()
+
+# Đường dẫn đến file PNG của bạn
+file_path = '../Data/NumberOfCrimesEachMonth.png'
+# Gọi hàm để plot ảnh
+plot_image_from_png(file_path)
+
+
+# %% [markdown]
+# - We can see that the year 2023 is missing November and December data. Maybe the agencies have not yet completed the report and added it to the dataset. 
+# - So we can delete the 2023 data so that the assessments will be accurate than.
+
+# %%
+#Just 2022 under 
+effect_president_crime_df=effect_president_crime_df[effect_president_crime_df['datetime_occ'].dt.year<=2022]
+
+# %%
+#Change datetime_occ to month
+def change_date_to_month(date):
+    return date.month
+effect_president_crime_df['datetime_occ']=effect_president_crime_df['datetime_occ'].apply(change_date_to_month)
+
+# %%
+#Create a new dataframe to store the number of each type of crime each month
+temp_df=effect_president_crime_df.groupby(['datetime_occ','crm_type']).size().to_frame('count').reset_index()
+
+#Create a new dataframe to store the average number of each type 
+average_df=temp_df.groupby(['crm_type']).mean().reset_index().drop(['datetime_occ'],axis=1)
+
+# %%
+#create standard deviation dataframe by take count in each month of each type of 
+#crime minus average of that type of crime and then divide by average of that type of crime
+standard_deviation_df=temp_df.merge(average_df,on='crm_type')
+standard_deviation_df.columns=['datetime_occ','crm_type','count','average']
+standard_deviation_df['standard_deviation']=standard_deviation_df['count']-standard_deviation_df['average']
+
+#Divide standard deviation by average and then multiply by 100 to get the percentage
+standard_deviation_df['standard_deviation']=round((standard_deviation_df['standard_deviation']/standard_deviation_df['average'])*100,1)
+standard_deviation_df=standard_deviation_df.drop(['count','average'],axis=1)
+
+
+# %% [markdown]
+# - According to online sources, we can know that the cold season months in Los Angeles start from November to March (next month) and the hot season from May to October. We can draw more straight lines representing these two seasons by month to make it easier to visualize.
+# 
+
+# %%
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Pivot the DataFrame to have each type_crime as a separate column
+pivot_df = standard_deviation_df.pivot(index='datetime_occ', columns='crm_type', values='standard_deviation')
+
+# Create a grouped bar chart
+fig, ax = plt.subplots(figsize=(12, 6))
+
+# Plot each type_crime as a separate set of bars
+pivot_df.plot(kind='bar', stacked=False, ax=ax)
+
+#Plot hot and cold season
+#value of x and y for hot and cold season is x-axis and y-axis of the plot not is the value of month
+cold_season_1_x=[10,11.5]
+cold_season_2_x=[-0.5,2]
+cold_season_y=[10,10]
+hot_season_1=[4,9]
+hot_season_y=[-10,-10]
+plt.plot(cold_season_1_x,cold_season_y,color='blue')
+plt.plot(cold_season_2_x,cold_season_y,color='blue')
+plt.plot(hot_season_1,hot_season_y,color='red')
+
+
+# Add labels and title for each line
+plt.text( 6, -10+0.5, 'Hot Season', color='red')
+plt.text( 0, 10+0.5, 'Cold Season', color='blue')
+
+
+
+# Add labels and title
+ax.set_xlabel('Month')
+ax.set_ylabel('Deviation from average (%)')
+ax.set_title('Seasonal structure of crime types')
+# Rotate x-axis labels for better readability
+plt.xticks(rotation=45, ha='right')
+# Show the legend
+plt.legend(title='Type of Crime',loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
+
+# Show the plot
+plt.tight_layout()
+plt.show()
+
+
+# %% [markdown]
+# - Comment:
+#     - Overall, crime groups saw a decrease in incidents from February to April.
+#     - As for the *Assault and Battery* and *Property Damage and Vasndalism* groups, criminals prefer to operate from May to October.This is also a hot time of year in Los Angeles.
+#     - The *Theft and Robbery* group prefers to operate from October to January of the next year.This is also a cold time of year in Los Angeles.
+# - Conclusion:
+#     - The fact that crime groups *Assault and Battery* and *Property Damage and Vasndalism* are high in the hot season can be explained by the fact that this is the summer vacation where many community activities take place, so criminals who commit crimes and crimes have many opportunities to approach criminals. more target audience.
+#     - In the cold season, more types of robberies occur because the cold season can have very limited passersby on the streets, so criminals have many opportunities to commit theft without being detected.
+# 
+# 
+
+# %% [markdown]
+# ### 5.1 Where is the location and what is the time happening of each type of crime?
+
+# %% [markdown]
+# First we need to know how many types of crime are there in this dataset.
+# 
+
+# %% [markdown]
+# There are 138 types of crime in this dataset. That's a lot. So we need to group them into some types of crime.
+# 
+# 
+# 
+
+# %% [markdown]
+# # 6. Model to predict the time and location of the next crime.
+
+# %% [markdown]
+# # 7. Conclusion
+
+# %% [markdown]
+# # 8. References
 
