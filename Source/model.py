@@ -78,7 +78,7 @@ param_grid = {'classifier__n_estimators': [50, 100, 150],
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = random_state)
 kfold = KFold(n_splits = 5, shuffle = True, random_state = random_state)
 
-grid_cv = GridSearchCV(estimator = pipe, param_grid = param_grid, cv = kfold, scoring = 'accuracy', n_jobs = 1, verbose = 1)
+grid_cv = GridSearchCV(estimator = pipe, param_grid = param_grid, cv = kfold, n_jobs = 1, verbose = 1)
 
 grid_cv.fit(X_train, y_train)
 
@@ -102,4 +102,4 @@ y_pred = model.predict_proba(X_test)
 print(f'Custom accuracy score on test data: {top_n_accuracy(3, y_test, y_pred)}')
 
 # Model saving
-joblib.dump(model, 'model.joblib')
+joblib.dump(model, '../Model/model.joblib')
