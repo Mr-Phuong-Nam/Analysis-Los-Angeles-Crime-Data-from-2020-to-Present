@@ -17,12 +17,12 @@ from lightgbm import LGBMClassifier
 random_state = 1
 
 # Data loading
-df = pd.read_csv('crime_data_cleaned.csv')
+df = pd.read_csv('../Data/crime_data_cleaned.csv')
 
 # Data preparation
-df['Datetime OCC'] = df['Datetime OCC'].apply(pd.to_datetime)
+df['datetime_occ'] = df['datetime_occ'].apply(pd.to_datetime)
 
-with open('crime_types.json') as f:
+with open('../Data/crime_types.json') as f:
   crime_dict = json.load(f)
 
 def replace(value):
@@ -31,25 +31,25 @@ def replace(value):
       return key
   return np.nan
 
-df['Crm Cd Desc'] = df['Crm Cd Desc'].apply(lambda x: replace(x))
+df['crm_cd_desc'] = df['crm_cd_desc'].apply(lambda x: replace(x))
 
 # Fratures selection
-features = ['AREA NAME', 'Vict Age', 'Vict Sex', 'Vict Descent', 'LAT', 'LON', 'Datetime OCC']
-target = 'Crm Cd Desc'
+features = ['area_name', 'vict_age', 'vict_sex', 'vict_descent', 'lat', 'lon', 'datetime_occ']
+target = 'crm_cd_desc'
 
-df = df[df['Datetime OCC'].dt.year != 2023]
+df = df[df['datetime_occ'].dt.year != 2023]
 
 X = df[features].copy()
 y = df[target].copy()
-X['Year'] = X['Datetime OCC'].dt.year
-X['Month'] = X['Datetime OCC'].dt.month
-X['Day'] = X['Datetime OCC'].dt.day
-X['Hour'] = X['Datetime OCC'].dt.hour
+X['year'] = X['datetime_occ'].dt.year
+X['month'] = X['datetime_occ'].dt.month
+X['day'] = X['datetime_occ'].dt.day
+X['hour'] = X['datetime_occ'].dt.hour
 
-X = X.drop(columns=['Datetime OCC'])
+X = X.drop(columns=['datetime_occ'])
 
 # Pipeline
-cat_cols = ['AREA NAME', 'Vict Sex', 'Vict Descent']
+cat_cols = ['area_name', 'vict_sex', 'vict_descent']
 cat_transformer = Pipeline(
     steps=[
         ('imputer', SimpleImputer(strategy = 'most_frequent')),
@@ -57,7 +57,7 @@ cat_transformer = Pipeline(
     ]
 )
 
-num_cols = ['Vict Age', 'LAT', 'LON', 'Year', 'Month', 'Hour']
+num_cols = ['vict_age', 'lat', 'lon', 'year', 'month', 'day', 'hour']
 num_transformer = Pipeline(steps = [('imputer', KNNImputer(n_neighbors = 5))])
 
 preprocessor = ColumnTransformer(
@@ -99,7 +99,7 @@ def top_n_accuracy(n, y_true, y_pred_proba):
   return score / len(y_true)
 
 y_pred = model.predict_proba(X_test)
-print(f'Custom accuracy score on test data: {top_n_accuracy(3, y_test, y_pred):.2f}')
+print(f'Custom accuracy score on test data: {top_n_accuracy(3, y_test, y_pred)}')
 
 # Model saving
 joblib.dump(model, 'model.joblib')
