@@ -26,6 +26,15 @@ import matplotlib.pyplot as plt
 import os 
 import sys
 
+import joblib
+
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer, KNNImputer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import GridSearchCV, KFold, train_test_split
+
+from lightgbm import LGBMClassifier
 
 # %%
 pd.set_option('display.max_columns', 500)
@@ -356,14 +365,7 @@ crime_df.loc[crime_df['vict_descent'].isna(), 'vict_descent'] = 'X'
 
 
 # %% [markdown]
-# #### 3.3.4. For `status_desc`
-
-# %%
-crime_df['status_desc'].unique()
-
-
-# %% [markdown]
-# #### 3.3.5. For `lat`, `lon`
+# #### 3.3.4. For `lat`, `lon`
 
 # %% [markdown]
 # - As we mentioned above, the lat and lon values exhibit an anomaly, encompassing zero values that correspond to a location distant from Los Angeles.
@@ -894,10 +896,121 @@ plt.show()
 #     - In contrast, other areas experience a lower frequency of dangerous weapon usage, although the overall numbers remain substantial.
 
 # %% [markdown]
-#  # 6. Model to predict the time and location of the next crime.
+# ## 5.4. If you were in Los Angeles, which crime would you encounter under a specific condition?
 
 # %% [markdown]
-#  # 7. Conclusion
+# ### 5.4.1. Meanings
+# - 
+# - 
+
+# %% [markdown]
+# ### 5.4.2. How to answer questions?
+
+# %% [markdown]
+# We have trained a `LGBMClassifier` model to predict the type of crime that might occur in Los Angeles under specific conditions. The model considers various factors, including location, victim demographics, and time of day.
+# The accuracy is about `0.79` (custom accuracy metric).
+
+# %% [markdown]
+# #### 5.4.2.1. Data preprocessing
+
+# %% [markdown]
+# The model utilizes the following features to make predictions:
+# 
+# - `area_name`: The name of the area where the crime occurred.
+# - `vict_age`: The age of the victim.
+# - `vict_sex`: The sex of the victim.
+# - `vict_descent`: The descent of the victim.
+# - `lat`: The latitude of the crime location.
+# - `lon`: The longitude of the crime location.
+# - `datetime_occ`: The date and time of the crime.
+# 
+# The `datetime_occ` column will be split into `year`, `month`, `day`, and `hour` columns, and then it will be dropped.
+# 
+# The model aims to predict the `crm_type`, which is a description of the crime code.
+
+# %%
+random_state = 1
+features = ['area_name', 'vict_age', 'vict_sex', 'vict_descent', 'lat', 'lon', 'datetime_occ']
+target = 'crm_type'
+df = crime_df[crime_df['datetime_occ'].dt.year != 2023]
+
+# %% [markdown]
+# #### 5.4.2.1. Model training
+
+# %% [markdown]
+# A brief of training process we have done.
+# 
+# **Pipeline**
+# 
+# Creates a pipeline for data preprocessing and model fitting:
+# - Imputes missing categorical values with the most frequent values and encodes them using one-hot encoding.
+# - Imputes missing numerical values using KNNImputer.
+# - Uses LGBMClassifier as the model.
+# 
+# **Grid Search**
+# 
+# - Performs hyperparameter tuning using GridSearchCV to find the best model configuration.
+# 
+# **Final Model Training**
+# 
+# - Trains the model with the best hyperparameters on the entire training set.
+# 
+# **Evaluation**
+# 
+# - Defines a custom top-n accuracy metric.
+# - Evaluates model performance on the test set using this metric.
+# 
+# **Model Saving**
+# 
+# - Saves the trained model to a file named 'model.joblib'.
+
+# %% [markdown]
+# #### 5.4.2.1. Make prediction
+
+# %% [markdown]
+# We will select a sample from data set then
+
+# %%
+crime_df.columns
+
+# %%
+df.columns = ['Date Rptd', 'AREA NAME', 'Rpt Dist No', 'Part 1-2', 'Crm Cd', 'Crm Cd Desc', 'Mocodes', 'Vict Age', 'Vict Sex', 'Vict Descent', 'Premis Desc', 'Weapon Desc', 'Status Desc', 'Crm Cd 1', 'LOCATION', 'LAT', 'LON', 'Datetime OCC', 'mocodes_desc', 'crm_type']
+features = ['AREA NAME', 'Vict Age', 'Vict Sex', 'Vict Descent', 'LAT', 'LON', 'Datetime OCC']
+target = 'Crm Cd Desc'
+
+# %%
+X = df[features].copy()
+y = df[target].copy()
+
+# X['year'] = X['datetime_occ'].dt.year
+# X['month'] = X['datetime_occ'].dt.month
+# X['day'] = X['datetime_occ'].dt.day
+# X['hour'] = X['datetime_occ'].dt.hour
+
+X['Year'] = X['Datetime OCC'].dt.year
+X['Month'] = X['Datetime OCC'].dt.month
+X['Day'] = X['Datetime OCC'].dt.day
+X['Hour'] = X['Datetime OCC'].dt.hour
+
+X = X.drop(columns=['Datetime OCC'])
+
+# %%
+X_sample = X.sample(1)
+y_sample = y[X_sample.index]
+y_sample
+
+# %%
+model = joblib.load('../Model/model.joblib')
+model
+
+# %%
+prediction = model.predict_proba(X_sample)
+
+# %%
+pd.DataFrame(prediction[0], index = model.classes_).sort_values(by = 0, ascending = False)
+
+# %% [markdown]
+#  # 6. Conclusion
 #  - First of all, I would like to thank the teachers and readers for viewing the analyzes that the group has conducted recently. 
 # - Although most of the results are concluded based on basic statistical functions, not using machine learning models a lot. But the team also tried to ask good questions that are closely related to **criminal psychology**, through which readers can also have a more interesting perspective on criminals in general. general and crime in Angeles in particular.
 # 
